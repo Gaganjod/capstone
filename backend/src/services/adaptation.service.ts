@@ -126,7 +126,9 @@ export class AdaptationService {
     } else {
       // ML_ADAPTIVE: Call Python ML FastAPI service
       try {
-        const response = await axios.post(`${ENV.ML_SERVICE_URL}/explain`, {
+        const mlServiceBase = process.env.ML_SERVICE_URL || ENV.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+        const targetUrl = new URL('explain', mlServiceBase.endsWith('/') ? mlServiceBase : `${mlServiceBase}/`).toString();
+        const response = await axios.post(targetUrl, {
           readingAccuracy: learnerState.readingAccuracy,
           comprehensionScore: learnerState.comprehensionScore,
           averageResponseTime: learnerState.averageResponseTime,

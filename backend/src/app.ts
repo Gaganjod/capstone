@@ -7,8 +7,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Health Check
-app.get('/health', (req, res) => {
+// Health Check (Supports both direct /health and rewritten /api/health)
+app.get(['/health', '/api/health'], (req, res) => {
   res.json({
     status: 'healthy',
     service: 'AdaptLearn AI Express Backend API',
