@@ -1,0 +1,195 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String          @id @default(uuid())
+  name           String
+  email          String          @unique
+  passwordHash   String
+  role           String          @default("STUDENT") // STUDENT, TEACHER, RESEARCHER, ADMIN
+  createdAt      DateTime        @default(now())
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+}
+
+model StudentProfile {
+  id               String                    @id @default(uuid())
+  userId           String                    @unique
+  user             User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  age              Int                       @default(10)
+  gradeLevel       String                    @default("Grade 5")
+  readingLevel     String                    @default("Intermediate")
+  dyslexiaSeverity String                    @default("MODERATE") // MILD, MODERATE, SEVERE
+  learnerState     LearnerState?
+  accessibility    AccessibilityPreference?
+  attempts         Attempt[]
+  recommendations  Recommendation[]
+  experiments      ExperimentSession[]
+  aiInteractions   AIInteraction[]
+}
+
+model TeacherProfile {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school     String   @default("AdaptLearn Academy")
+  department String   @default("Special Education")
+}
+
+model LearnerState {
+  id                     String         @id @default(uuid())
+  studentId              String         @unique
+  student                StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  readingAccuracy        Float          @default(68.0)
+  comprehensionScore     Float          @default(72.0)
+  averageResponseTime    Float          @default(6500.0) // ms
+  errorRate              Float          @default(0.28)
+  audioPerformance       Float          @default(84.0)
+  textPerformance        Float          @default(62.0)
+  currentDifficulty      String         @default("MEDIUM") // EASY, MEDIUM, HARD
+  preferredModality      String         @default("AUDIO_TEXT") // TEXT, AUDIO, AUDIO_TEXT, HIGHLIGHTED_TEXT
+  pacingMode             String         @default("STANDARD") // SLOWER, STANDARD, ACCELERATED
+  feedbackStrategy       String         @default("ENCOURAGING_ELABORATE")
+  engagementScore        Float          @default(85.0)
+  recentPerformanceTrend String         @default("STABLE") // IMPROVING, STABLE, DECLINING
+  attemptHistoryCount    Int            @default(0)
+  updatedAt              DateTime       @updatedAt
+}
+
+model AccessibilityPreference {
+  id               String         @id @default(uuid())
+  studentId        String         @unique
+  student          StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fontSize         String         @default("medium") // small, medium, large, extra-large
+  fontFamily       String         @default("OpenDyslexic") // OpenDyslexic, Inter, Comic Sans MS, System
+  letterSpacing    String         @default("wide") // normal, wide, extra-wide
+  lineSpacing      String         @default("comfortable") // normal, comfortable, large
+  readingSpeed     Float          @default(1.0)
+  audioAutoPlay    Boolean        @default(true)
+  highlightReading Boolean        @default(true)
+  highContrast     Boolean        @default(false)
+  focusOverlay     Boolean        @default(false)
+  updatedAt        DateTime       @updatedAt
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  category    String   @default("Reading & Language")
+  icon        String   @default("BookOpen")
+  lessons     Lesson[]
+  createdAt   DateTime @default(now())
+}
+
+model Lesson {
+  id                String     @id @default(uuid())
+  courseId          String
+  course            Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title             String
+  summary           String
+  content           String
+  simplifiedContent String
+  audioUrl          String?
+  difficulty        String     @default("MEDIUM")
+  order             Int        @default(1)
+  questions         Question[]
+  attempts          Attempt[]
+  createdAt         DateTime   @default(now())
+}
+
+model Question {
+  id                    String    @id @default(uuid())
+  lessonId              String
+  lesson                Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questionText          String
+  options               String    // JSON array stored as string
+  correctAnswer         Int       // 0-indexed
+  explanation           String
+  simplifiedExplanation String?
+  difficulty            String    @default("MEDIUM")
+  concept               String    @default("Vocabulary")
+  audioUrl              String?
+  attempts              Attempt[]
+}
+
+model Assessment {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  targetLevel String   @default("Initial Screening")
+  createdAt   DateTime @default(now())
+}
+
+model Attempt {
+  id             String         @id @default(uuid())
+  studentId      String
+  student        StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId       String
+  lesson         Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questionId     String
+  question       Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  chosenOption   Int
+  isCorrect      Boolean
+  responseTimeMs Int
+  modalityUsed   String         @default("AUDIO_TEXT")
+  hintUsed       Boolean        @default(false)
+  retryCount     Int            @default(0)
+  engineType     String         @default("ML_ADAPTIVE")
+  timestamp      DateTime       @default(now())
+}
+
+model Recommendation {
+  id               String                      @id @default(uuid())
+  studentId        String
+  student          StudentProfile              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  targetDifficulty String                      @default("MEDIUM")
+  targetModality   String                      @default("AUDIO_TEXT")
+  targetPacing     String                      @default("STANDARD")
+  targetFeedback   String                      @default("ENCOURAGING_ELABORATE")
+  engineType       String                      @default("ML_ADAPTIVE")
+  confidence       Float                       @default(0.85)
+  createdAt        DateTime                    @default(now())
+  explanation      RecommendationExplanation?
+}
+
+model RecommendationExplanation {
+  id                        String         @id @default(uuid())
+  recommendationId          String         @unique
+  recommendation            Recommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  featureImportances        String         // JSON string
+  naturalLanguageReasoning  String
+  SHAPValues                String         // JSON string
+  observedData              String         // JSON string
+  modelConfidence           Float          @default(0.85)
+  createdAt                 DateTime       @default(now())
+}
+
+model ExperimentSession {
+  id                 String         @id @default(uuid())
+  studentId          String
+  student            StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  engineType         String         @default("ML_ADAPTIVE") // NON_ADAPTIVE, RULE_BASED, ML_ADAPTIVE
+  learningGain       Float          @default(18.5)
+  accuracyDelta      Float          @default(14.2)
+  comprehensionDelta Float          @default(12.8)
+  completionTimeMs   Int            @default(450000)
+  timestamp          DateTime       @default(now())
+}
+
+model AIInteraction {
+  id            String         @id @default(uuid())
+  studentId     String
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  promptType    String         // SIMPLIFY_TEXT, GENERATE_HINT, EXPLAIN_CONCEPT, GENERATE_QUESTION
+  inputContent  String
+  outputContent String
+  modelUsed     String         @default("AdaptLearn-LLM-v1")
+  timestamp     DateTime       @default(now())
+}

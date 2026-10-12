@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-main: #f8fafc;
+    --text-primary: #0f172a;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Dyslexia Accessibility Utilities */
+.font-opendyslexic {
+  font-family: 'Lexend', 'Comic Sans MS', sans-serif !important;
+}
+
+.letter-spacing-wide {
+  letter-spacing: 0.08em !important;
+}
+
+.letter-spacing-extra-wide {
+  letter-spacing: 0.15em !important;
+}
+
+.line-spacing-comfortable {
+  line-height: 1.8 !important;
+}
+
+.line-spacing-large {
+  line-height: 2.2 !important;
+}
+
+.high-contrast-mode {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+}
+
+.high-contrast-mode .bg-white,
+.high-contrast-mode .bg-slate-50,
+.high-contrast-mode .bg-indigo-50 {
+  background-color: #121212 !important;
+  color: #ffffff !important;
+  border-color: #333333 !important;
+}
+
+.focus-overlay-active {
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65) !important;
+}
+
+/* Linguapath soft visual card styles */
+.linguapath-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.04);
+  transition: all 0.25s ease-in-out;
+}
+
+.linguapath-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.12);
+  border-color: #cbd5e1;
+}
+
+.hero-gradient-glow {
+  background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.08) 0%, rgba(13, 148, 136, 0.04) 50%, transparent 70%);
+}
