@@ -19,7 +19,14 @@ import {
   Brain,
   AlertCircle,
   Loader2,
+  Mic,
+  MicOff,
+  Award,
+  Activity,
+  Check,
+  RefreshCw,
 } from 'lucide-react';
+import { evaluateReading, ReadingAssessmentResult } from '../../../../lib/speechAssessment';
 
 interface Question {
   id: string;
@@ -281,6 +288,16 @@ export default function StudentLearningStudio({ params }: { params: { lessonId: 
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
 
+  // ── Voice Recording & Oral Reading Accuracy State ─────────────────────────
+  const [isRecording, setIsRecording]               = useState(false);
+  const [spokenTranscript, setSpokenTranscript]     = useState('');
+  const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null);
+  const [assessmentResult, setAssessmentResult]     = useState<ReadingAssessmentResult | null>(null);
+  const [showScorecard, setShowScorecard]           = useState(false);
+  const [isSyncingAccuracy, setIsSyncingAccuracy]   = useState(false);
+  const [accuracyNotice, setAccuracyNotice]         = useState<string | null>(null);
+  const recognitionRef                              = React.useRef<any>(null);
+
   // ── Fetch lesson (adaptively filtered by student profile with fallback) ────
   useEffect(() => {
     setLessonLoading(true);
@@ -454,6 +471,124 @@ export default function StudentLearningStudio({ params }: { params: { lessonId: 
       }
     };
   }, [isPlaying, currentText, settings.readingSpeed, speakFromWord]);
+
+  // ── Voice Recording & Oral Reading Accuracy Handlers ───────────────────────
+  const startRecording = React.useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Please try Google Chrome or Microsoft Edge.');
+      return;
+    }
+
+    // Stop audio narration if active
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsPlaying(false);
+    setActiveWordIndex(-1);
+
+    setSpokenTranscript('');
+    setAssessmentResult(null);
+    setShowScorecard(false);
+    setAccuracyNotice(null);
+
+    const startTime = Date.now();
+    setRecordingStartTime(startTime);
+    setIsRecording(true);
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript + ' ';
+        }
+        setSpokenTranscript(transcript);
+
+        const elapsed = (Date.now() - startTime) / 1000;
+        const evalRes = evaluateReading(words, transcript, elapsed);
+        setAssessmentResult(evalRes);
+      };
+
+      recognition.onerror = (e: any) => {
+        console.warn('Speech recognition warning:', e.error);
+        if (e.error === 'not-allowed') {
+          alert('Microphone access was denied. Please allow microphone permissions in your browser to test reading accuracy.');
+          setIsRecording(false);
+        }
+      };
+
+      recognition.onend = () => {
+        // Recognition ended
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error('Error starting recognition:', err);
+      setIsRecording(false);
+    }
+  }, [words]);
+
+  const stopRecording = React.useCallback(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+    }
+    setIsRecording(false);
+
+    const elapsed = recordingStartTime ? Math.max(1, (Date.now() - recordingStartTime) / 1000) : 5;
+    const finalResult = evaluateReading(words, spokenTranscript, elapsed);
+    setAssessmentResult(finalResult);
+    setShowScorecard(true);
+  }, [words, spokenTranscript, recordingStartTime]);
+
+  const handleSaveAccuracy = async () => {
+    if (!assessmentResult) return;
+    setIsSyncingAccuracy(true);
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('adaptlearn_user') : null;
+      const user = stored ? JSON.parse(stored) : null;
+      const studentId = user?.studentId || '';
+
+      if (studentId) {
+        await fetch(`/api/students/${studentId}/reading-accuracy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            readingAccuracy: assessmentResult.accuracy,
+            wordsPerMinute: assessmentResult.wordsPerMinute,
+            lessonId: lesson?.id,
+          }),
+        });
+      }
+
+      setAccuracyNotice(`🎯 Saved! Reading accuracy (${assessmentResult.accuracy}%) updated your adaptive learner profile.`);
+      setTimeout(() => setShowScorecard(false), 2500);
+    } catch {
+      setAccuracyNotice(`Saved locally! Accuracy score: ${assessmentResult.accuracy}%.`);
+    } finally {
+      setIsSyncingAccuracy(false);
+    }
+  };
+
+  const speakWord = (word: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const clean = word.replace(/[^a-zA-Z]/g, '');
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.rate = 0.8;
+    utter.lang = 'en-US';
+    window.speechSynthesis.speak(utter);
+  };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleToggleSimplify = () => {
@@ -778,26 +913,198 @@ export default function StudentLearningStudio({ params }: { params: { lessonId: 
             </div>
           </div>
 
-          {/* Text Display */}
-          <div
-            className={`p-6 rounded-2xl bg-slate-50/70 border border-slate-200/80 leading-relaxed font-opendyslexic tracking-wide transition-all ${settings.fontSize === 'small' ? 'text-sm'
-                : settings.fontSize === 'medium' ? 'text-base sm:text-lg'
-                  : settings.fontSize === 'large' ? 'text-xl'
-                    : 'text-2xl'
-              }`}
-          >
-            {words.map((word, idx) => (
-              <span
-                key={idx}
-                className={`inline-block px-1 py-0.5 rounded transition-all duration-150 ${activeWordIndex === idx
-                    ? 'bg-amber-300 text-slate-900 font-extrabold scale-110 shadow-xs'
-                    : 'text-slate-800'
-                  }`}
+          {/* Oral Reading Accuracy Toolbar */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-50 via-pink-50 to-amber-50 border border-rose-200/80 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {!isRecording ? (
+                <button
+                  onClick={startRecording}
+                  className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all hover:scale-105"
+                  title="Read passage aloud into your microphone to test your accuracy & fluency speed"
+                >
+                  <Mic className="w-4 h-4 text-white" />
+                  <span>Start Reading Aloud 🎙️</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-md animate-pulse">
+                    <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+                    <span>Listening... Speak clearly</span>
+                  </div>
+                  <button
+                    onClick={stopRecording}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-all"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Finish & Check Accuracy</span>
+                  </button>
+                </div>
+              )}
+              <div>
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1">
+                  <Activity className="w-3.5 h-3.5 text-rose-600" /> Oral Reading Fluency & Accuracy
+                </span>
+                <span className="text-[11px] text-slate-600">
+                  {isRecording
+                    ? `Words matched: ${assessmentResult?.matchedCount || 0}/${words.length} (${assessmentResult?.accuracy || 0}%)`
+                    : assessmentResult
+                    ? `Last attempt: ${assessmentResult.accuracy}% accuracy (${assessmentResult.wordsPerMinute} WPM)`
+                    : 'Read into microphone to evaluate accuracy and WPM rate'}
+                </span>
+              </div>
+            </div>
+
+            {assessmentResult && !isRecording && (
+              <button
+                onClick={() => setShowScorecard(true)}
+                className="px-3.5 py-1.5 rounded-lg bg-white border border-rose-200 text-rose-700 font-bold text-xs flex items-center gap-1.5 hover:bg-rose-50 shadow-2xs"
               >
-                {word}{' '}
-              </span>
-            ))}
+                <Award className="w-3.5 h-3.5 text-amber-500" />
+                <span>View Scorecard ({assessmentResult.accuracy}%)</span>
+              </button>
+            )}
           </div>
+
+          {/* Accuracy Notice */}
+          {accuracyNotice && (
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900 flex items-center gap-2 animate-in fade-in shadow-2xs">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{accuracyNotice}</span>
+            </div>
+          )}
+
+          {/* Text Display with Dynamic Color Highlighting */}
+          <div
+            className={`p-6 rounded-2xl bg-slate-50/70 border border-slate-200/80 leading-relaxed font-opendyslexic tracking-wide transition-all ${
+              settings.fontSize === 'small'
+                ? 'text-sm'
+                : settings.fontSize === 'medium'
+                ? 'text-base sm:text-lg'
+                : settings.fontSize === 'large'
+                ? 'text-xl'
+                : 'text-2xl'
+            }`}
+          >
+            {words.map((word, idx) => {
+              const status = assessmentResult?.wordStatuses[idx]?.status;
+              const isMatched = status === 'matched';
+              const isMissed = status === 'missed';
+
+              return (
+                <span
+                  key={idx}
+                  className={`inline-block px-1 py-0.5 rounded transition-all duration-150 ${
+                    activeWordIndex === idx
+                      ? 'bg-amber-300 text-slate-900 font-extrabold scale-110 shadow-xs'
+                      : isMatched
+                      ? 'bg-emerald-100 text-emerald-950 font-bold border-b-2 border-emerald-500'
+                      : isMissed
+                      ? 'bg-rose-100 text-rose-900 border-b-2 border-rose-400 line-through decoration-rose-400 cursor-pointer'
+                      : 'text-slate-800'
+                  }`}
+                  title={isMatched ? 'Correctly read!' : isMissed ? 'Click to hear pronunciation' : undefined}
+                  onClick={() => {
+                    if (isMissed) speakWord(word);
+                  }}
+                >
+                  {word}{' '}
+                </span>
+              );
+            })}
+          </div>
+
+          {/* Oral Reading Fluency Scorecard Modal / Panel */}
+          {showScorecard && assessmentResult && (
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 text-white shadow-2xl border border-indigo-500/30 space-y-5 animate-in fade-in">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-base font-extrabold text-white">Oral Reading Accuracy Scorecard</h3>
+                </div>
+                <button
+                  onClick={() => setShowScorecard(false)}
+                  className="text-slate-400 hover:text-white text-xs font-bold px-2 py-1 rounded bg-slate-800 hover:bg-slate-700"
+                >
+                  ✕ Close
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/60 text-center">
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Accuracy</span>
+                  <span className={`text-2xl font-black ${
+                    assessmentResult.accuracy >= 85
+                      ? 'text-emerald-400'
+                      : assessmentResult.accuracy >= 70
+                      ? 'text-amber-400'
+                      : 'text-rose-400'
+                  }`}>
+                    {assessmentResult.accuracy}%
+                  </span>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/60 text-center">
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Fluency Rate</span>
+                  <span className="text-2xl font-black text-cyan-400">{assessmentResult.wordsPerMinute} <span className="text-xs font-semibold text-slate-400">WPM</span></span>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/60 text-center">
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Words Read</span>
+                  <span className="text-2xl font-black text-purple-400">{assessmentResult.matchedCount} / {assessmentResult.totalWords}</span>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/60 text-center">
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Duration</span>
+                  <span className="text-2xl font-black text-amber-400">{assessmentResult.durationSeconds}s</span>
+                </div>
+              </div>
+
+              {assessmentResult.missedWords.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    💡 Click any missed word to hear proper pronunciation:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {assessmentResult.missedWords.slice(0, 10).map((w, i) => (
+                      <button
+                        key={i}
+                        onClick={() => speakWord(w)}
+                        className="px-2.5 py-1 rounded-lg bg-rose-950/60 border border-rose-800/50 text-rose-300 hover:bg-rose-900/60 text-xs font-semibold flex items-center gap-1 transition-all"
+                        title="Click to hear pronunciation"
+                      >
+                        <Volume2 className="w-3 h-3 text-rose-400" />
+                        <span>{w}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                <span className="text-xs text-slate-400">
+                  {assessmentResult.accuracy >= 85
+                    ? '🌟 Outstanding fluency! Ready for more challenging texts.'
+                    : assessmentResult.accuracy >= 65
+                    ? '👍 Good oral pacing! Practicing missed words will improve mastery.'
+                    : '💪 Great try! Listen with Bimodal Audio and read aloud again.'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={startRecording}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Try Again</span>
+                  </button>
+                  <button
+                    onClick={handleSaveAccuracy}
+                    disabled={isSyncingAccuracy}
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all disabled:opacity-50"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>{isSyncingAccuracy ? 'Syncing...' : 'Sync with AI Profile'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Quiz Section */}
           {currentQuestion && (

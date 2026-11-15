@@ -61,4 +61,19 @@ export class StudentController {
       return res.status(500).json({ error: err.message || 'Failed to fetch learner state' });
     }
   }
+
+  static async recordReadingAccuracy(req: Request, res: Response) {
+    try {
+      const { studentId } = req.params;
+      const { readingAccuracy, wordsPerMinute } = req.body;
+      const result = await LearnerService.recordReadingFluency(
+        studentId,
+        Number(readingAccuracy),
+        Number(wordsPerMinute) || 75
+      );
+      return res.status(200).json(result);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Failed to record reading fluency' });
+    }
+  }
 }
