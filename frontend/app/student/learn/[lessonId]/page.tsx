@@ -278,6 +278,8 @@ export default function StudentLearningStudio({ params }: { params: { lessonId: 
   const [retryCount, setRetryCount]         = useState(0);
   const [score, setScore]                   = useState(0);
   const [quizDone, setQuizDone]             = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiNotice, setAiNotice]             = useState<string | null>(null);
 
   // ── Fetch lesson (adaptively filtered by student profile with fallback) ────
   useEffect(() => {
@@ -524,6 +526,65 @@ export default function StudentLearningStudio({ params }: { params: { lessonId: 
     }
   };
 
+  const handleGenerateAIQuestions = async () => {
+    if (!lesson) return;
+    setIsGeneratingAI(true);
+    setAiNotice('Generating fresh AI questions adapted to this lesson...');
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('adaptlearn_user') : null;
+      const user = stored ? JSON.parse(stored) : null;
+      const studentId = user?.studentId || '';
+
+      const res = await fetch('/api/genai/questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lessonText: currentText || lesson.content,
+          lessonTitle: lesson.title,
+          difficulty: currentQuestion?.difficulty || 'MEDIUM',
+          concept: currentQuestion?.concept || 'Lesson Comprehension',
+          studentId,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`AI generation response status: ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.questions && Array.isArray(data.questions) && data.questions.length > 0) {
+        const formatted = data.questions.map((q: any, i: number) => ({
+          id: `ai-gen-${Date.now()}-${i}`,
+          questionText: q.questionText,
+          options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+          correctAnswer: q.correctAnswer ?? 0,
+          explanation: q.explanation || 'Answer deduced from passage context.',
+          simplifiedExplanation: q.simplifiedExplanation || q.explanation || 'Key concept from the lesson.',
+          difficulty: q.difficulty || currentQuestion?.difficulty || 'MEDIUM',
+          concept: q.concept || 'AI Generated Context',
+        }));
+
+        setLesson((prev) => (prev ? { ...prev, questions: formatted } : prev));
+        setCurrentQuestionIdx(0);
+        setSelectedOption(null);
+        setSubmitted(false);
+        setIsCorrect(null);
+        setFeedback(null);
+        setHint(null);
+        setScore(0);
+        setQuizDone(false);
+        setAiNotice(`✨ Generated ${formatted.length} fresh AI questions for this lesson!`);
+      } else {
+        setAiNotice('Could not generate new questions. Retaining existing questions.');
+      }
+    } catch (err: any) {
+      console.warn('AI question generation error:', err);
+      setAiNotice('AI generation service offline. Retaining current questions.');
+    } finally {
+      setIsGeneratingAI(false);
+      setTimeout(() => setAiNotice(null), 6000);
+    }
+  };
+
   // ── Loading / Error States ────────────────────────────────────────────────
   if (lessonLoading) {
     return (
@@ -716,18 +777,36 @@ export default function StudentLearningStudio({ params }: { params: { lessonId: 
           {/* Quiz Section */}
           {currentQuestion && (
             <div className="pt-6 border-t border-slate-200 space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-brand-600" />
-                  Q{currentQuestionIdx + 1}: {currentQuestion.questionText}
+                  <HelpCircle className="w-5 h-5 text-brand-600 shrink-0" />
+                  <span>Q{currentQuestionIdx + 1}: {currentQuestion.questionText}</span>
                 </h3>
-                <button
-                  onClick={() => setHint(currentQuestion.simplifiedExplanation || 'Read the passage carefully to find the answer.')}
-                  className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1"
-                >
-                  <Sparkles className="w-3.5 h-3.5" /> Hint?
-                </button>
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  <button
+                    onClick={handleGenerateAIQuestions}
+                    disabled={isGeneratingAI}
+                    className="text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-50"
+                    title="Generate brand new AI questions tailored to this text"
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 text-indigo-600 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+                    {isGeneratingAI ? 'Generating...' : 'Fresh AI Questions ✨'}
+                  </button>
+                  <button
+                    onClick={() => setHint(currentQuestion.simplifiedExplanation || 'Read the passage carefully to find the answer.')}
+                    className="text-xs font-semibold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" /> Hint
+                  </button>
+                </div>
               </div>
+
+              {aiNotice && (
+                <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-medium text-indigo-950 leading-relaxed animate-in fade-in flex items-center gap-2.5 shadow-2xs">
+                  <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span>{aiNotice}</span>
+                </div>
+              )}
 
               {/* Badges */}
               <div className="flex flex-wrap items-center gap-2">

@@ -5,6 +5,7 @@ import {
   trainModel,
   retrainModel,
   listVersions,
+  syncLearnerDataAndTrain,
 } from '../services/mlService';
 
 const router = Router();
@@ -42,6 +43,15 @@ router.post('/retrain', async (req, res) => {
     res.json(data);
   } catch (e: any) {
     res.status(500).json({ error: e.message || 'ML retrain request failed' });
+  }
+});
+
+router.post('/sync-and-train', async (req, res) => {
+  try {
+    const data = await syncLearnerDataAndTrain();
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message || 'Sync and train failed' });
   }
 });
 

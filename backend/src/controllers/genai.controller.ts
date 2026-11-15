@@ -54,4 +54,23 @@ export class GenAIController {
       return res.status(500).json({ error: err.message || 'Explanation generation failed' });
     }
   }
+
+  static async generateQuestions(req: Request, res: Response) {
+    try {
+      const { lessonText, lessonTitle, difficulty, concept, studentId } = req.body;
+      if (!lessonText) {
+        return res.status(400).json({ error: 'lessonText is required' });
+      }
+      const questions = await AIService.generateDynamicQuestions({
+        lessonText,
+        lessonTitle,
+        difficulty,
+        concept,
+        studentId,
+      });
+      return res.status(200).json({ questions, generatedAt: new Date().toISOString() });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Failed to generate dynamic questions' });
+    }
+  }
 }

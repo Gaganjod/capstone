@@ -1,14 +1,15 @@
 import axios from 'axios';
 
-const ML_URL = process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://127.0.0.1:8000';
+// Route through backend proxy /api/ml so it works seamlessly in both local and deployed environments
+const API_BASE = '/api/ml';
 
 export const getMetrics = async () => {
-  const { data } = await axios.get(`${ML_URL}/metrics`);
+  const { data } = await axios.get(`${API_BASE}/metrics`);
   return data;
 };
 
 export const getHealth = async () => {
-  const { data } = await axios.get(`${ML_URL}/health`);
+  const { data } = await axios.get(`${API_BASE}/health`);
   return data;
 };
 
@@ -17,16 +18,22 @@ export const trainModel = async (config?: {
   seed?: number;
   model_type?: string;
 }) => {
-  const { data } = await axios.post(`${ML_URL}/train`, config ?? {});
+  const { data } = await axios.post(`${API_BASE}/train`, config ?? {});
   return data;
 };
 
 export const retrainModel = async () => {
-  const { data } = await axios.post(`${ML_URL}/retrain`);
+  const { data } = await axios.post(`${API_BASE}/retrain`);
+  return data;
+};
+
+export const syncAndTrain = async () => {
+  const { data } = await axios.post(`${API_BASE}/sync-and-train`);
   return data;
 };
 
 export const listVersions = async () => {
-  const { data } = await axios.get(`${ML_URL}/versions`);
+  const { data } = await axios.get(`${API_BASE}/versions`);
   return data;
 };
+
