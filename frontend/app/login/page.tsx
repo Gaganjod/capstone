@@ -6,13 +6,16 @@ import { useRouter } from 'next/navigation';
 import { Brain, ArrowRight, Lock, Mail, Sparkles } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
+import { useAuth } from '../../context/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const { login } = useAuth();
+
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
-  const [error, setError] = useState('');
+  const [role, setRole]         = useState<'STUDENT' | 'TEACHER'>('STUDENT');
+  const [error, setError]       = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,25 +24,18 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
-      if (data.user.role === 'TEACHER') {
+      await login(email, password);
+      // AuthContext stores token + user; read role from localStorage user
+      const stored = localStorage.getItem('adaptlearn_user');
+      const user   = stored ? JSON.parse(stored) : null;
+      if (user?.role === 'TEACHER') {
         router.push('/teacher');
       } else {
         router.push('/student');
       }
     } catch (err: any) {
-      // Demo fallback login for smooth experience
-      if (email === 'teacher@adaptlearn.edu' || role === 'TEACHER') {
+      // Demo fallback: navigate based on role selector
+      if (role === 'TEACHER') {
         router.push('/teacher');
       } else {
         router.push('/student');

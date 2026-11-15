@@ -1,0 +1,15 @@
+{
+  "modality_train_accuracy": 1.0,
+  "modality_test_accuracy": 0.95,
+  "modality_cv_mean": 0.9479,
+  "modality_cv_std": 0.0119,
+  "difficulty_train_accuracy": 1.0,
+  "difficulty_test_accuracy": 0.9958,
+  "difficulty_cv_mean": 0.9812,
+  "difficulty_cv_std": 0.0173,
+  "training_samples": 960,
+  "test_samples": 240,
+  "model_backend": "XGBoost",
+  "shap_available": false,
+  "trained_at": "2026-11-15T09:54:08Z"
+}

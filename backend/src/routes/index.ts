@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import mlRoutes from './ml.routes';
 import authRoutes from './auth.routes';
 import studentRoutes from './student.routes';
 import lessonRoutes from './lesson.routes';
@@ -19,4 +20,5 @@ router.use('/analytics', analyticsRoutes);
 router.use('/accessibility', accessibilityRoutes);
 router.use('/genai', genaiRoutes);
 
+router.use('/ml', mlRoutes);
 export default router;

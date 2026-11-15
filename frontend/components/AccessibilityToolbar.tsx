@@ -130,15 +130,15 @@ export const AccessibilityToolbar: React.FC = () => {
               <Volume2 className="w-3.5 h-3.5 text-brand-500" />
               Audio Speed ({settings.readingSpeed}x)
             </label>
-            <div className="grid grid-cols-4 gap-1">
-              {[0.75, 1.0, 1.25, 1.5].map((spd) => (
+            <div className="grid grid-cols-5 gap-1">
+              {[0.5, 0.75, 1.0, 1.25, 1.5].map((spd) => (
                 <button
                   key={spd}
                   onClick={() => updateSettings({ readingSpeed: spd })}
                   className={`py-1 text-xs rounded-md border ${
                     settings.readingSpeed === spd
                       ? 'bg-brand-600 text-white font-bold border-brand-600'
-                      : 'bg-slate-50 border-slate-200 text-slate-600'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   {spd}x

@@ -35,7 +35,7 @@ export class LessonController {
 
   static async getLessonById(req: Request, res: Response) {
     try {
-      const lesson = await prisma.lesson.findUnique({
+      let lesson = await prisma.lesson.findUnique({
         where: { id: req.params.id },
         include: {
           course: true,
@@ -44,13 +44,65 @@ export class LessonController {
       });
 
       if (!lesson) {
+        const orderMatch = req.params.id.match(/^lesson-(\d+)$/i);
+        if (orderMatch) {
+          const orderNum = parseInt(orderMatch[1], 10);
+          lesson = await prisma.lesson.findFirst({
+            where: { order: orderNum },
+            include: {
+              course: true,
+              questions: true,
+            },
+          });
+        }
+
+        if (!lesson && (req.params.id === 'lesson-1' || req.params.id === 'default')) {
+          lesson = await prisma.lesson.findFirst({
+            orderBy: { order: 'asc' },
+            include: {
+              course: true,
+              questions: true,
+            },
+          });
+        }
+      }
+
+      if (!lesson) {
         return res.status(404).json({ error: 'Lesson not found' });
+      }
+
+      // Check if studentId or difficulty was requested for adaptive question filtering
+      let targetDifficulty = (req.query.difficulty as string)?.toUpperCase();
+
+      if (!targetDifficulty && req.query.studentId) {
+        const studentProfile = await prisma.studentProfile.findFirst({
+          where: {
+            OR: [
+              { id: req.query.studentId as string },
+              { userId: req.query.studentId as string },
+            ],
+          },
+          include: { learnerState: true },
+        });
+
+        if (studentProfile?.learnerState?.currentDifficulty) {
+          targetDifficulty = studentProfile.learnerState.currentDifficulty.toUpperCase();
+        }
+      }
+
+      // Adapt question ordering: questions matching the student's level come first
+      let questionsList = lesson.questions;
+      if (targetDifficulty) {
+        const matched = lesson.questions.filter((q) => q.difficulty.toUpperCase() === targetDifficulty);
+        const others = lesson.questions.filter((q) => q.difficulty.toUpperCase() !== targetDifficulty);
+        questionsList = [...matched, ...others];
       }
 
       // Parse JSON string options for each question
       const formattedLesson = {
         ...lesson,
-        questions: lesson.questions.map((q) => ({
+        targetDifficulty: targetDifficulty || lesson.difficulty,
+        questions: questionsList.map((q) => ({
           ...q,
           options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
         })),

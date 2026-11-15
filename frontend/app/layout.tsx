@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AccessibilityProvider } from '../context/AccessibilityContext';
+import { AuthProvider } from '../context/AuthContext';
 
 export const metadata: Metadata = {
   title: 'AdaptLearn AI | Learning That Adapts to You',
@@ -16,7 +17,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AccessibilityProvider>{children}</AccessibilityProvider>
+        <AuthProvider>
+          <AccessibilityProvider>{children}</AccessibilityProvider>
+        </AuthProvider>
       </body>
     </html>
   );

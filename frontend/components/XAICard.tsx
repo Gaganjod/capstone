@@ -3,7 +3,21 @@
 import React, { useState } from 'react';
 import { Sparkles, Brain, Info, CheckCircle2, ChevronRight } from 'lucide-react';
 
+interface RecommendationProp {
+  modality?: string;
+  difficulty?: string;
+  confidence?: number;
+  engineType?: string;
+  explanation?: {
+    featureImportances?: Record<string, number>;
+    naturalLanguageReasoning?: string;
+    observedData?: Record<string, number>;
+  };
+}
+
 interface XAICardProps {
+  recommendation?: RecommendationProp;
+  // legacy flat props kept for backwards compat
   modality?: string;
   difficulty?: string;
   confidence?: number;
@@ -13,27 +27,26 @@ interface XAICardProps {
   engineType?: string;
 }
 
-export const XAICard: React.FC<XAICardProps> = ({
-  modality = 'AUDIO_TEXT',
-  difficulty = 'MEDIUM',
-  confidence = 0.87,
-  featureImportances = {
-    readingAccuracy: 0.36,
-    audioPerformance: 0.29,
-    averageResponseTime: 0.18,
-    comprehensionScore: 0.11,
-    errorRate: 0.06,
-  },
-  naturalLanguageReasoning = 'The recommendation was influenced mainly by recent reading accuracy and stronger performance during audio-supported activities.',
-  observedData = {
-    readingAccuracy: 68,
-    audioPerformance: 86,
-    textPerformance: 58,
-    responseTimeMs: 6200,
-    comprehension: 74,
-  },
-  engineType = 'ML_ADAPTIVE',
-}) => {
+const DEFAULT_FI = {
+  readingAccuracy: 0.36,
+  audioPerformance: 0.29,
+  averageResponseTime: 0.18,
+  comprehensionScore: 0.11,
+  errorRate: 0.06,
+};
+const DEFAULT_OD = { readingAccuracy: 68, audioPerformance: 86, textPerformance: 58, responseTimeMs: 6200, comprehension: 74 };
+
+export const XAICard: React.FC<XAICardProps> = (props) => {
+  // Merge recommendation object with flat props (recommendation object takes priority)
+  const rec = props.recommendation;
+  const modality       = rec?.modality         ?? props.modality         ?? 'AUDIO_TEXT';
+  const difficulty     = rec?.difficulty       ?? props.difficulty       ?? 'MEDIUM';
+  const confidence     = rec?.confidence       ?? props.confidence       ?? 0.87;
+  const engineType     = rec?.engineType       ?? props.engineType       ?? 'ML_ADAPTIVE';
+  const featureImportances = rec?.explanation?.featureImportances ?? props.featureImportances ?? DEFAULT_FI;
+  const naturalLanguageReasoning = rec?.explanation?.naturalLanguageReasoning ?? props.naturalLanguageReasoning ?? 'The recommendation was influenced mainly by reading accuracy and stronger audio-supported performance.';
+  const observedData   = rec?.explanation?.observedData ?? props.observedData ?? DEFAULT_OD;
+
   const [activeTab, setActiveTab] = useState<'explanation' | 'observed'>('explanation');
 
   const featureLabels: Record<string, string> = {

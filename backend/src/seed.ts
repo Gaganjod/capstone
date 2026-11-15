@@ -200,6 +200,97 @@ async function main() {
     },
   });
 
+  const q3 = await prisma.question.create({
+    data: {
+      lessonId: lesson1.id,
+      questionText: 'What was singing high above Leo in the forest?',
+      options: JSON.stringify(['Colorful birds singing soft melodies', 'A group of noisy monkeys', 'The howling wind', 'Crickets in the tall grass']),
+      correctAnswer: 0,
+      explanation: 'The passage mentions high above, colorful birds sang soft melodies.',
+      simplifiedExplanation: 'Birds were singing high up in the trees.',
+      difficulty: 'EASY',
+      concept: 'Direct Recall',
+    },
+  });
+
+  const q4 = await prisma.question.create({
+    data: {
+      lessonId: lesson1.id,
+      questionText: 'What does the word "nestled" mean in the phrase "nestled in the moss"?',
+      options: JSON.stringify(['Thrown far away into the bushes', 'Resting snugly and protected in the moss', 'Broken into sharp pieces', 'Buried deep under heavy stones']),
+      correctAnswer: 1,
+      explanation: '"Nestled" means settled or lying comfortably and snugly within something soft.',
+      simplifiedExplanation: '"Nestled" means tucked comfortably like an egg in a nest.',
+      difficulty: 'MEDIUM',
+      concept: 'Contextual Vocabulary',
+    },
+  });
+
+  const q5 = await prisma.question.create({
+    data: {
+      lessonId: lesson1.id,
+      questionText: 'Which detail suggests that the forest has existed for a very long time?',
+      options: JSON.stringify(['The market in the town', 'The ancient oak tree', 'The small silver key', 'Leo\'s footsteps']),
+      correctAnswer: 1,
+      explanation: 'The word "ancient" specifically indicates the oak tree—and by extension the forest—has been there for centuries.',
+      simplifiedExplanation: 'The word "ancient" means very, very old.',
+      difficulty: 'MEDIUM',
+      concept: 'Inference & Context',
+    },
+  });
+
+  const q6 = await prisma.question.create({
+    data: {
+      lessonId: lesson1.id,
+      questionText: 'Why did the author describe Leo walking "quietly"?',
+      options: JSON.stringify(['He was running away from danger', 'He was taking in the peaceful forest atmosphere', 'He was playing a game of tag', 'He was wearing heavy iron boots']),
+      correctAnswer: 1,
+      explanation: 'Walking quietly reflects Leo\'s calm, attentive journey through the serene woods.',
+      simplifiedExplanation: 'Leo walked quietly because the forest was calm and peaceful.',
+      difficulty: 'MEDIUM',
+      concept: 'Character Intent',
+    },
+  });
+
+  const q7 = await prisma.question.create({
+    data: {
+      lessonId: lesson1.id,
+      questionText: 'What overall mood or tone is established by the author in this passage?',
+      options: JSON.stringify(['An eerie and suspenseful atmosphere', 'A tranquil and enchanting fairy-tale mood', 'A chaotic and humorous setting', 'A sorrowful and bleak environment']),
+      correctAnswer: 1,
+      explanation: 'Words like "soft melodies", "dense green forest", and "ancient oak tree" create a peaceful, enchanted storybook mood.',
+      simplifiedExplanation: 'The story feels magical, calm, and peaceful.',
+      difficulty: 'HARD',
+      concept: 'Tone & Atmosphere',
+    },
+  });
+
+  const q8 = await prisma.question.create({
+    data: {
+      lessonId: lesson1.id,
+      questionText: 'How does discovering the silver key function as an inciting incident for the plot?',
+      options: JSON.stringify(['It immediately ends Leo\'s journey and returns him home', 'It introduces a mystery that triggers curiosity and invites an adventure', 'It proves that Leo has lost his way to the market', 'It warns Leo of an impending natural disaster']),
+      correctAnswer: 1,
+      explanation: 'In narrative structure, finding a mysterious key raises questions about what lock it opens, initiating the story\'s central mystery.',
+      simplifiedExplanation: 'The key is a clue that starts an exciting new adventure.',
+      difficulty: 'HARD',
+      concept: 'Literary Structure',
+    },
+  });
+
+  const q9 = await prisma.question.create({
+    data: {
+      lessonId: lesson1.id,
+      questionText: 'Which phrase contains both visual and tactile sensory imagery?',
+      options: JSON.stringify(['Leo stopped near an ancient oak tree', 'Silver key nestled in the moss', 'Walked quietly to the market', 'High above, colorful birds']),
+      correctAnswer: 1,
+      explanation: '"Silver key" provides metallic visual imagery, while "nestled in the moss" evokes the soft tactile feel of moss cushioning an object.',
+      simplifiedExplanation: 'You can see the shiny silver key and imagine touching the soft moss.',
+      difficulty: 'HARD',
+      concept: 'Sensory Imagery Analysis',
+    },
+  });
+
   const lesson2 = await prisma.lesson.create({
     data: {
       courseId: course2.id,
@@ -213,7 +304,7 @@ async function main() {
     },
   });
 
-  const q3 = await prisma.question.create({
+  const l2_q1 = await prisma.question.create({
     data: {
       lessonId: lesson2.id,
       questionText: 'How do plants make food in an ecosystem?',
@@ -221,8 +312,112 @@ async function main() {
       correctAnswer: 1,
       explanation: 'Plants use photosynthesis to convert light energy from the sun into chemical energy (food).',
       simplifiedExplanation: 'Plants use sunlight to make their own food through photosynthesis.',
-      difficulty: 'MEDIUM',
+      difficulty: 'EASY',
       concept: 'Scientific Process',
+    },
+  });
+
+  const l2_q2 = await prisma.question.create({
+    data: {
+      lessonId: lesson2.id,
+      questionText: 'What do primary consumers eat to survive?',
+      options: JSON.stringify(['Rocks and sand', 'Plants (primary producers)', 'Apex predators like eagles', 'Clouds and rainwater']),
+      correctAnswer: 1,
+      explanation: 'Primary consumers are herbivores that feed directly on primary producers (plants).',
+      simplifiedExplanation: 'Primary consumers are animals that eat plants for energy.',
+      difficulty: 'EASY',
+      concept: 'Food Chain Basics',
+    },
+  });
+
+  const l2_q3 = await prisma.question.create({
+    data: {
+      lessonId: lesson2.id,
+      questionText: 'What is the primary source of energy that fuels nearly all ecosystems?',
+      options: JSON.stringify(['The Sun', 'Volcanic lava', 'Wind currents', 'Deep underground caverns']),
+      correctAnswer: 0,
+      explanation: 'Solar radiation from the sun is the initial energy input for almost all terrestrial ecosystems.',
+      simplifiedExplanation: 'The sun gives plants the light they need to grow.',
+      difficulty: 'EASY',
+      concept: 'Energy Origins',
+    },
+  });
+
+  const l2_q4 = await prisma.question.create({
+    data: {
+      lessonId: lesson2.id,
+      questionText: 'Why are green plants classified as "primary producers"?',
+      options: JSON.stringify(['They produce oxygen for fish only', 'They synthesize their own organic food from abiotic sunlight', 'They hunt smaller primary consumers', 'They decompose fallen branches']),
+      correctAnswer: 1,
+      explanation: 'Producers generate new biomass from inorganic sunlight and water, forming the foundation of the trophic pyramid.',
+      simplifiedExplanation: 'Plants are called producers because they make their own food from scratch.',
+      difficulty: 'MEDIUM',
+      concept: 'Trophic Levels',
+    },
+  });
+
+  const l2_q5 = await prisma.question.create({
+    data: {
+      lessonId: lesson2.id,
+      questionText: 'What would happen to herbivore populations if a drought destroyed all local plants?',
+      options: JSON.stringify(['Their population would rapidly multiply', 'They would experience severe starvation and population decline', 'They would turn into photosynthesis producers', 'They would remain completely unchanged']),
+      correctAnswer: 1,
+      explanation: 'Without their primary food source, herbivore populations decline due to starvation and lack of energy.',
+      simplifiedExplanation: 'Without plants to eat, plant-eating animals would go hungry.',
+      difficulty: 'MEDIUM',
+      concept: 'Ecosystem Interdependence',
+    },
+  });
+
+  const l2_q6 = await prisma.question.create({
+    data: {
+      lessonId: lesson2.id,
+      questionText: 'Which of the following organisms is an example of a primary consumer?',
+      options: JSON.stringify(['A hawk catching field mice', 'A caterpillar eating green oak leaves', 'An ancient pine tree', 'A mushroom breaking down logs']),
+      correctAnswer: 1,
+      explanation: 'A caterpillar eats plant foliage directly, making it a primary consumer (herbivore).',
+      simplifiedExplanation: 'A caterpillar is a primary consumer because it eats plant leaves.',
+      difficulty: 'MEDIUM',
+      concept: 'Classification & Examples',
+    },
+  });
+
+  const l2_q7 = await prisma.question.create({
+    data: {
+      lessonId: lesson2.id,
+      questionText: 'According to the 10% rule in ecology, why is there less biomass at higher trophic levels?',
+      options: JSON.stringify(['Predators refuse to eat large amounts of food', 'Approximately 90% of energy is lost as heat and metabolic maintenance at each transfer', 'Plants absorb chemical energy back from apex predators', 'Herbivores destroy energy permanently during digestion']),
+      correctAnswer: 1,
+      explanation: 'Only about 10% of energy is incorporated into new biomass at the next trophic level; 90% is consumed in cellular respiration or lost as thermal heat.',
+      simplifiedExplanation: 'Most energy is used up for body heat and running, so only a little energy is passed up to top animals.',
+      difficulty: 'HARD',
+      concept: 'Thermodynamics in Ecology',
+    },
+  });
+
+  const l2_q8 = await prisma.question.create({
+    data: {
+      lessonId: lesson2.id,
+      questionText: 'How does an ecosystem maintain dynamic homeostasis when a temporary disturbance occurs?',
+      options: JSON.stringify(['By completely eradicating all primary producers', 'Through interconnected negative feedback loops and biodiversity resilience', 'By stopping photosynthesis until winter', 'By expelling all secondary consumers']),
+      correctAnswer: 1,
+      explanation: 'Biodiversity and negative feedback loops buffer ecosystems, allowing them to absorb shocks and re-establish equilibrium.',
+      simplifiedExplanation: 'Different animals and plants help balance each other out when bad weather strikes.',
+      difficulty: 'HARD',
+      concept: 'Homeostasis & Equilibrium',
+    },
+  });
+
+  const l2_q9 = await prisma.question.create({
+    data: {
+      lessonId: lesson2.id,
+      questionText: 'How does photosynthesis directly mitigate greenhouse gas accumulation in the atmosphere?',
+      options: JSON.stringify(['It sequesters carbon dioxide and transforms it into glucose and oxygen', 'It emits ozone into the troposphere', 'It converts nitrogen gas into sulfuric acid', 'It cools water molecules in oceans permanently']),
+      correctAnswer: 0,
+      explanation: 'Plants absorb atmospheric CO2 during the Calvin cycle, sequestering carbon in solid cellulose and releasing O2.',
+      simplifiedExplanation: 'Plants pull carbon dioxide out of the air to make sugars and give off fresh oxygen.',
+      difficulty: 'HARD',
+      concept: 'Biogeochemical Cycles',
     },
   });
 
